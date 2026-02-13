@@ -3,56 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HealthViz Pro - GLTF Custom</title>
+    <title>Precision Health Analysis</title>
     <style>
-        :root { --primary: #00f2ff; --bg: #0b0e14; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        :root { --neon: #00f2ff; --warn: #ff3333; --safe: #00ff88; }
+        body { margin: 0; background: #050a0f; color: white; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; }
         
-        /* 헤더 및 레이아웃 */
-        #header { position: absolute; top: 0; padding: 20px; z-index: 10; width: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); }
-        .logo { font-size: 1.2rem; font-weight: 800; color: var(--primary); letter-spacing: 1px; }
+        /* 헤더 */
+        #header { position: absolute; top: 0; width: 100%; padding: 20px; z-index: 100; border-bottom: 1px solid rgba(0,242,255,0.2); background: rgba(0,0,0,0.5); }
+        .logo { font-size: 1rem; font-weight: 900; color: var(--neon); letter-spacing: 2px; }
 
-        /* 로딩 바 */
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; text-align: center; }
-        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 연령대 선택 */
+        .age-nav { position: absolute; top: 80px; left: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid var(--neon); color: var(--neon); padding: 12px 18px; border-radius: 10px; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
+        .btn.active { background: var(--neon); color: black; font-weight: bold; box-shadow: 0 0 15px var(--neon); }
 
-        /* UI 패널 */
-        .controls { position: absolute; top: 80px; left: 20px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
-        .age-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--primary); color: white; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-        .age-btn.active { background: var(--primary); color: black; font-weight: bold; }
-
+        /* 결과 패널 */
         #info-panel { 
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
-            background: rgba(15, 25, 35, 0.9); border: 1px solid var(--primary); border-radius: 20px; padding: 20px;
-            display: none; z-index: 100; backdrop-filter: blur(10px);
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px;
+            background: rgba(10, 20, 30, 0.9); border: 1px solid var(--neon); border-radius: 20px; padding: 20px;
+            display: none; z-index: 1000; backdrop-filter: blur(15px); box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
         }
+        .score-wrap { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; }
+        .score-val { font-size: 2rem; font-weight: 900; }
+        .nutrient-box { background: rgba(0,242,255,0.1); padding: 12px; border-radius: 10px; border-left: 4px solid var(--neon); font-size: 0.9rem; }
+
+        /* 로더 */
+        #loader { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050a0f; z-index: 2000; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--neon); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="loader">
         <div class="spinner"></div>
-        <div>3D 모델 분석 중...</div>
+        <p style="margin-top:15px; font-size:0.8rem; letter-spacing:2px;">ANALYZING 3D MESH...</p>
     </div>
 
     <div id="header">
-        <div class="logo">PRECISION HEALTH ANALYSIS</div>
-        <div style="font-size:0.7rem; opacity:0.6;">CUSTOM GLTF MODEL LOADED</div>
+        <div class="logo">BIOMETRIC SCANNER <small style="color:white; opacity:0.5;">v2.0</small></div>
     </div>
 
-    <div class="controls">
-        <button class="age-btn active" onclick="updateAge('20s', this)">20대 데이터</button>
-        <button class="age-btn" onclick="updateAge('30s', this)">30대 데이터</button>
-        <button class="age-btn" onclick="updateAge('40s', this)">40대 데이터</button>
+    <div class="age-nav">
+        <button class="btn active" onclick="changeAge('20s', this)">20대 모드</button>
+        <button class="btn" onclick="changeAge('30s', this)">30대 모드</button>
+        <button class="btn" onclick="changeAge('40s', this)">40대 모드</button>
     </div>
 
     <div id="info-panel">
-        <h3 id="part-name" style="margin:0; color:var(--primary);">부위 명칭</h3>
-        <p>상태 점수: <strong id="part-score" style="font-size:1.2rem;">-</strong>/10</p>
-        <div style="font-size:0.9rem; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-            <strong>추천 영양소:</strong> <span id="part-nutrient">-</span>
+        <div style="font-size:0.7rem; color:var(--neon); margin-bottom:5px;">✓ 정밀 진단 데이터</div>
+        <h2 id="part-name" style="margin:0; font-size:1.4rem;">부위 명칭</h2>
+        <div class="score-wrap">
+            <div class="score-val" id="part-score">0</div>
+            <div style="text-align:right; font-size:0.8rem; color:#888;">HEALTH<br>INDEX</div>
         </div>
+        <div class="nutrient-box">
+            <div style="font-weight:bold; margin-bottom:5px; color:var(--neon);">[추천 처방]</div>
+            <div id="part-nutrient">분석 데이터를 불러오는 중...</div>
+        </div>
+        <button onclick="document.getElementById('info-panel').style.display='none'" style="width:100%; background:none; border:none; color:#555; margin-top:15px; cursor:pointer;">닫기</button>
     </div>
 
     <script type="importmap">
@@ -69,23 +78,38 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // 1. 데이터 설정
-        const healthData = {
-            '20s': { score: 9, nutrient: '종합비타민, 유산균' },
-            '30s': { score: 6, nutrient: '밀크씨슬, 오메가3' },
-            '40s': { score: 4, nutrient: '글루코사민, 칼슘, 루테인' }
+        // --- 데이터베이스 ---
+        const db = {
+            '20s': {
+                head: { score: 9, nut: '루테인, 테아닌 (스트레스 완화)' },
+                body: { score: 8, nut: '멀티비타민, 밀크씨슬' },
+                arms: { score: 9, nut: '분지사슬아미노산 (BCAA)' },
+                legs: { score: 7, nut: '마그네슘 (근육 이완)' }
+            },
+            '30s': {
+                head: { score: 7, nut: '비타민 B군 (에너지), 오메가3' },
+                body: { score: 6, nut: '프로바이오틱스, 코엔자임Q10' },
+                arms: { score: 7, nut: '글루코사민, 콜라겐' },
+                legs: { score: 5, nut: '칼륨, 혈행 개선제' }
+            },
+            '40s': {
+                head: { score: 5, nut: '포스파티딜세린 (기억력), 은행잎 추출물' },
+                body: { score: 4, nut: '홍국, 나토키나제 (혈관 관리)' },
+                arms: { score: 5, nut: 'MSM (관절), 비타민D' },
+                legs: { score: 4, nut: '칼슘, 보스웰리아' }
+            }
         };
+
         let currentAge = '20s';
-        let model;
+        let model, mixer;
+        const clock = new THREE.Clock();
 
-        // 2. Scene 세팅
+        // --- 기본 셋업 ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0b0e14);
-
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1, 3);
+        camera.position.set(0, 1.2, 3.5);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
@@ -93,70 +117,99 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const light = new THREE.DirectionalLight(0xffffff, 2);
-        light.position.set(2, 2, 5);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0x00f2ff, 2);
+        pointLight.position.set(2, 3, 4);
+        scene.add(pointLight);
 
-        // 3. GLTF 모델 로드 및 색상 입히기
+        // --- GLTF 로드 ---
         const loader = new GLTFLoader();
-        // 주의: 파일명이 'scene.gltf'여야 하며 같은 경로에 있어야 함
         loader.load('./scene.gltf', (gltf) => {
             model = gltf.scene;
             
-            // 모델 중앙 정렬
-            const box = new THREE.Box3().setFromObject(model);
-            const center = box.getCenter(new THREE.Vector3());
-            model.position.sub(center);
-            
-            scene.add(model);
-            document.getElementById('loader').style.display = 'none';
-
-            applyHealthColor(); // 초기 색상 적용
-        }, undefined, (error) => {
-            console.error('모델 로드 실패:', error);
-            alert('모델 파일을 찾을 수 없습니다. scene.gltf와 scene.bin 파일을 같은 폴더에 두었는지 확인하세요.');
-        });
-
-        // 색상 적용 함수
-        function applyHealthColor() {
-            if (!model) return;
-            const data = healthData[currentAge];
-            const color = new THREE.Color();
-            // 점수에 따른 R, G 값 계산 (1=빨강, 10=초록)
-            color.setRGB((10 - data.score) / 10, data.score / 10, 0.1);
-
-            model.traverse((node) => {
-                if (node.isMesh) {
-                    // 모델이 화이트이므로 새로운 표준 재질로 덮어쓰기
-                    node.material = new THREE.MeshStandardMaterial({
-                        color: color,
-                        metalness: 0.3,
-                        roughness: 0.5,
+            // 모델 색상 초기화 (반투명 사이버 블루)
+            model.traverse(n => {
+                if (n.isMesh) {
+                    n.material = new THREE.MeshStandardMaterial({
+                        color: 0x00aaff,
                         transparent: true,
-                        opacity: 0.9
+                        opacity: 0.6,
+                        metalness: 0.8,
+                        roughness: 0.2
                     });
                 }
             });
+
+            scene.add(model);
+            document.getElementById('loader').style.display = 'none';
+        });
+
+        // --- 부위 판별 알고리즘 (핵심) ---
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        function handleInteract(e) {
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            pointer.x = (clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                const point = intersects[0].point; // 클릭된 지점의 좌표
+                const y = point.y;
+                const x = Math.abs(point.x);
+                let partId = '';
+                let partName = '';
+
+                // 좌표 기반 분류 (모델의 높이에 따라 논리적 분할)
+                if (y > 1.45) {
+                    partId = 'head'; partName = '두부 및 뇌신경';
+                } else if (y < 0.6) {
+                    partId = 'legs'; partName = '하체 및 골격계';
+                } else {
+                    if (x > 0.4) {
+                        partId = 'arms'; partName = '상체 및 관절';
+                    } else {
+                        partId = 'body'; partName = '흉부 및 내장기관';
+                    }
+                }
+
+                showUI(partId, partName);
+            }
         }
 
-        // 4. 인터랙션
-        window.updateAge = (age, btn) => {
-            currentAge = age;
-            document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            applyHealthColor();
+        function showUI(id, name) {
+            const data = db[currentAge][id];
+            const panel = document.getElementById('info-panel');
             
-            // UI 업데이트
-            document.getElementById('info-panel').style.display = 'block';
-            document.getElementById('part-name').innerText = "전신 정밀 분석";
-            document.getElementById('part-score').innerText = healthData[age].score;
-            document.getElementById('part-nutrient').innerText = healthData[age].nutrient;
+            document.getElementById('part-name').innerText = name;
+            document.getElementById('part-score').innerText = data.score;
+            document.getElementById('part-nutrient').innerText = data.nut;
+            
+            // 점수에 따른 색상 피드백
+            const scoreColor = data.score > 7 ? '#00ff88' : (data.score > 4 ? '#ffcc00' : '#ff3333');
+            document.getElementById('part-score').style.color = scoreColor;
+            
+            panel.style.display = 'block';
+        }
+
+        window.changeAge = (age, btn) => {
+            currentAge = age;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('info-panel').style.display = 'none';
         };
+
+        window.addEventListener('click', handleInteract);
+        window.addEventListener('touchstart', handleInteract);
 
         function animate() {
             requestAnimationFrame(animate);
-            if (model) model.rotation.y += 0.005;
+            if (model) model.rotation.y += 0.002;
             controls.update();
             renderer.render(scene, camera);
         }
