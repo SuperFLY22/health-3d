@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HealthViz Pro - GLTF Custom</title>
+    <style>
+        :root { --primary: #00f2ff; --bg: #0b0e14; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        
+        /* 헤더 및 레이아웃 */
+        #header { position: absolute; top: 0; padding: 20px; z-index: 10; width: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent); }
+        .logo { font-size: 1.2rem; font-weight: 800; color: var(--primary); letter-spacing: 1px; }
+
+        /* 로딩 바 */
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; text-align: center; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* UI 패널 */
+        .controls { position: absolute; top: 80px; left: 20px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
+        .age-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--primary); color: white; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .age-btn.active { background: var(--primary); color: black; font-weight: bold; }
+
+        #info-panel { 
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: rgba(15, 25, 35, 0.9); border: 1px solid var(--primary); border-radius: 20px; padding: 20px;
+            display: none; z-index: 100; backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <div>3D 모델 분석 중...</div>
+    </div>
+
+    <div id="header">
+        <div class="logo">PRECISION HEALTH ANALYSIS</div>
+        <div style="font-size:0.7rem; opacity:0.6;">CUSTOM GLTF MODEL LOADED</div>
+    </div>
+
+    <div class="controls">
+        <button class="age-btn active" onclick="updateAge('20s', this)">20대 데이터</button>
+        <button class="age-btn" onclick="updateAge('30s', this)">30대 데이터</button>
+        <button class="age-btn" onclick="updateAge('40s', this)">40대 데이터</button>
+    </div>
+
+    <div id="info-panel">
+        <h3 id="part-name" style="margin:0; color:var(--primary);">부위 명칭</h3>
+        <p>상태 점수: <strong id="part-score" style="font-size:1.2rem;">-</strong>/10</p>
+        <div style="font-size:0.9rem; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+            <strong>추천 영양소:</strong> <span id="part-nutrient">-</span>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // 1. 데이터 설정
+        const healthData = {
+            '20s': { score: 9, nutrient: '종합비타민, 유산균' },
+            '30s': { score: 6, nutrient: '밀크씨슬, 오메가3' },
+            '40s': { score: 4, nutrient: '글루코사민, 칼슘, 루테인' }
+        };
+        let currentAge = '20s';
+        let model;
+
+        // 2. Scene 세팅
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0b0e14);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1, 3);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(2, 2, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+        // 3. GLTF 모델 로드 및 색상 입히기
+        const loader = new GLTFLoader();
+        // 주의: 파일명이 'scene.gltf'여야 하며 같은 경로에 있어야 함
+        loader.load('./scene.gltf', (gltf) => {
+            model = gltf.scene;
+            
+            // 모델 중앙 정렬
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            model.position.sub(center);
+            
+            scene.add(model);
+            document.getElementById('loader').style.display = 'none';
+
+            applyHealthColor(); // 초기 색상 적용
+        }, undefined, (error) => {
+            console.error('모델 로드 실패:', error);
+            alert('모델 파일을 찾을 수 없습니다. scene.gltf와 scene.bin 파일을 같은 폴더에 두었는지 확인하세요.');
+        });
+
+        // 색상 적용 함수
+        function applyHealthColor() {
+            if (!model) return;
+            const data = healthData[currentAge];
+            const color = new THREE.Color();
+            // 점수에 따른 R, G 값 계산 (1=빨강, 10=초록)
+            color.setRGB((10 - data.score) / 10, data.score / 10, 0.1);
+
+            model.traverse((node) => {
+                if (node.isMesh) {
+                    // 모델이 화이트이므로 새로운 표준 재질로 덮어쓰기
+                    node.material = new THREE.MeshStandardMaterial({
+                        color: color,
+                        metalness: 0.3,
+                        roughness: 0.5,
+                        transparent: true,
+                        opacity: 0.9
+                    });
+                }
+            });
+        }
+
+        // 4. 인터랙션
+        window.updateAge = (age, btn) => {
+            currentAge = age;
+            document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applyHealthColor();
+            
+            // UI 업데이트
+            document.getElementById('info-panel').style.display = 'block';
+            document.getElementById('part-name').innerText = "전신 정밀 분석";
+            document.getElementById('part-score').innerText = healthData[age].score;
+            document.getElementById('part-nutrient').innerText = healthData[age].nutrient;
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (model) model.rotation.y += 0.005;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
