@@ -3,31 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Precision Health Analysis</title>
+    <title>Precision Health Analysis Pro</title>
     <style>
-        :root { --neon: #00f2ff; --warn: #ff3333; --safe: #00ff88; }
-        body { margin: 0; background: #050a0f; color: white; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; }
+        :root { --neon: #00f2ff; --bg: #050a0f; --panel: rgba(10, 25, 40, 0.9); }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; }
         
-        /* 헤더 */
-        #header { position: absolute; top: 0; width: 100%; padding: 20px; z-index: 100; border-bottom: 1px solid rgba(0,242,255,0.2); background: rgba(0,0,0,0.5); }
-        .logo { font-size: 1rem; font-weight: 900; color: var(--neon); letter-spacing: 2px; }
+        /* 헤더: 상위 % 표시 추가 */
+        #header { position: absolute; top: 0; width: 100%; padding: 20px; z-index: 100; border-bottom: 1px solid rgba(0,242,255,0.2); background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .logo { font-size: 0.9rem; font-weight: 900; color: var(--neon); letter-spacing: 2px; }
+        .user-rank { font-size: 0.8rem; background: rgba(0,242,255,0.2); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--neon); color: var(--neon); }
 
-        /* 연령대 선택 */
-        .age-nav { position: absolute; top: 80px; left: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
-        .btn { background: rgba(255,255,255,0.05); border: 1px solid var(--neon); color: var(--neon); padding: 12px 18px; border-radius: 10px; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
-        .btn.active { background: var(--neon); color: black; font-weight: bold; box-shadow: 0 0 15px var(--neon); }
+        /* 왼쪽: 연령 버튼 */
+        .age-nav { position: absolute; top: 100px; left: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid #333; color: #888; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.75rem; transition: 0.3s; }
+        .btn.active { border-color: var(--neon); color: var(--neon); background: rgba(0,242,255,0.1); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
 
-        /* 결과 패널 */
+        /* 오른쪽: 점수 분포도 막대그래프 */
+        #stat-panel { 
+            position: absolute; top: 100px; right: 20px; z-index: 100; width: 150px;
+            background: var(--panel); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-title { font-size: 0.7rem; color: var(--neon); margin-bottom: 10px; font-weight: bold; }
+        .bar-group { margin-bottom: 12px; }
+        .bar-label { font-size: 0.65rem; color: #ccc; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1s ease-out, background 0.3s; border-radius: 3px; }
+
+        /* 하단: 결과 패널 */
         #info-panel { 
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px;
-            background: rgba(10, 20, 30, 0.9); border: 1px solid var(--neon); border-radius: 20px; padding: 20px;
-            display: none; z-index: 1000; backdrop-filter: blur(15px); box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            background: var(--panel); border: 2px solid var(--neon); border-radius: 20px; padding: 25px;
+            display: none; z-index: 1000; backdrop-filter: blur(15px);
         }
-        .score-wrap { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; }
-        .score-val { font-size: 2rem; font-weight: 900; }
-        .nutrient-box { background: rgba(0,242,255,0.1); padding: 12px; border-radius: 10px; border-left: 4px solid var(--neon); font-size: 0.9rem; }
 
-        /* 로더 */
         #loader { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050a0f; z-index: 2000; }
         .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--neon); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -37,31 +45,37 @@
 
     <div id="loader">
         <div class="spinner"></div>
-        <p style="margin-top:15px; font-size:0.8rem; letter-spacing:2px;">ANALYZING 3D MESH...</p>
+        <p style="margin-top:15px; font-size:0.7rem; letter-spacing:2px; color:var(--neon);">INITIALIZING BIOMETRIC DATA...</p>
     </div>
 
     <div id="header">
-        <div class="logo">BIOMETRIC SCANNER <small style="color:white; opacity:0.5;">v2.0</small></div>
+        <div class="logo">HEALTH SCANNER</div>
+        <div class="user-rank" id="top-rank">상위 12% 예상</div>
     </div>
 
     <div class="age-nav">
-        <button class="btn active" onclick="changeAge('20s', this)">20대 모드</button>
-        <button class="btn" onclick="changeAge('30s', this)">30대 모드</button>
-        <button class="btn" onclick="changeAge('40s', this)">40대 모드</button>
+        <button class="btn active" onclick="changeAge('20s', this)">20s TYPE</button>
+        <button class="btn" onclick="changeAge('30s', this)">30s TYPE</button>
+        <button class="btn" onclick="changeAge('40s', this)">40s TYPE</button>
+    </div>
+
+    <div id="stat-panel">
+        <div class="stat-title">SCORE DISTRIBUTION</div>
+        <div class="bar-group" id="stat-head"><div class="bar-label"><span>머리</span><span class="v">0</span></div><div class="bar-bg"><div class="bar-fill"></div></div></div>
+        <div class="stat-group" id="stat-body"><div class="bar-label"><span>몸통</span><span class="v">0</span></div><div class="bar-bg"><div class="bar-fill"></div></div></div><br>
+        <div class="bar-group" id="stat-arms"><div class="bar-label"><span>상체</span><span class="v">0</span></div><div class="bar-bg"><div class="bar-fill"></div></div></div>
+        <div class="bar-group" id="stat-legs"><div class="bar-label"><span>하체</span><span class="v">0</span></div><div class="bar-bg"><div class="bar-fill"></div></div></div>
     </div>
 
     <div id="info-panel">
-        <div style="font-size:0.7rem; color:var(--neon); margin-bottom:5px;">✓ 정밀 진단 데이터</div>
-        <h2 id="part-name" style="margin:0; font-size:1.4rem;">부위 명칭</h2>
-        <div class="score-wrap">
-            <div class="score-val" id="part-score">0</div>
-            <div style="text-align:right; font-size:0.8rem; color:#888;">HEALTH<br>INDEX</div>
+        <div style="font-size:0.7rem; color:var(--neon); margin-bottom:5px;">● ANALYZED REGION</div>
+        <h2 id="part-name" style="margin:0; font-size:1.3rem;">부위 명칭</h2>
+        <div style="margin: 15px 0; font-size: 0.9rem; line-height: 1.6; color:#ddd;" id="part-desc"></div>
+        <div style="background: rgba(0,242,255,0.1); padding: 12px; border-radius: 10px; border-left: 4px solid var(--neon);">
+            <div style="font-size:0.7rem; font-weight:bold; color:var(--neon);">RECOMMENDED</div>
+            <div id="part-nutrient" style="font-size:0.85rem; margin-top:5px;">내용</div>
         </div>
-        <div class="nutrient-box">
-            <div style="font-weight:bold; margin-bottom:5px; color:var(--neon);">[추천 처방]</div>
-            <div id="part-nutrient">분석 데이터를 불러오는 중...</div>
-        </div>
-        <button onclick="document.getElementById('info-panel').style.display='none'" style="width:100%; background:none; border:none; color:#555; margin-top:15px; cursor:pointer;">닫기</button>
+        <button onclick="closePanel()" style="width:100%; background:none; border:none; color:#555; margin-top:15px; cursor:pointer;">TAP TO CLOSE</button>
     </div>
 
     <script type="importmap">
@@ -78,36 +92,33 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // --- 데이터베이스 ---
+        // --- 데이터 설정 ---
         const db = {
-            '20s': {
-                head: { score: 9, nut: '루테인, 테아닌 (스트레스 완화)' },
-                body: { score: 8, nut: '멀티비타민, 밀크씨슬' },
-                arms: { score: 9, nut: '분지사슬아미노산 (BCAA)' },
-                legs: { score: 7, nut: '마그네슘 (근육 이완)' }
-            },
-            '30s': {
-                head: { score: 7, nut: '비타민 B군 (에너지), 오메가3' },
-                body: { score: 6, nut: '프로바이오틱스, 코엔자임Q10' },
-                arms: { score: 7, nut: '글루코사민, 콜라겐' },
-                legs: { score: 5, nut: '칼륨, 혈행 개선제' }
-            },
-            '40s': {
-                head: { score: 5, nut: '포스파티딜세린 (기억력), 은행잎 추출물' },
-                body: { score: 4, nut: '홍국, 나토키나제 (혈관 관리)' },
-                arms: { score: 5, nut: 'MSM (관절), 비타민D' },
-                legs: { score: 4, nut: '칼슘, 보스웰리아' }
-            }
+            '20s': { rank: '상위 12%', data: {
+                head: { score: 9, nut: '루테인, 비타민B', desc: '신경계 및 안구 건강 상태가 매우 양호합니다.' },
+                body: { score: 8, nut: '유산균, 오메가3', desc: '내장 지방 수치가 안정적이며 대사 활동이 활발합니다.' },
+                arms: { score: 9, nut: '단백질 파우더', desc: '근골격계 발달이 우수하며 염증 수치가 낮습니다.' },
+                legs: { score: 7, nut: '마그네슘', desc: '하체 순환이 양호하나 간헐적 근육 긴장이 감지됩니다.' }
+            }},
+            '30s': { rank: '상위 28%', data: {
+                head: { score: 7, nut: '테아닌, 홍삼', desc: '업무 스트레스로 인한 가벼운 피로가 감지됩니다.' },
+                body: { score: 6, nut: '밀크씨슬, 소화효소', desc: '간 기능 수치가 주의 단계입니다. 충분한 휴식이 필요합니다.' },
+                arms: { score: 7, nut: 'MSM, 콜라겐', desc: '손목 및 어깨 관절에 무리가 가기 시작하는 단계입니다.' },
+                legs: { score: 5, nut: '은행잎 추출물', desc: '혈행 개선이 필요하며 하지 부종이 관찰됩니다.' }
+            }},
+            '40s': { rank: '상위 45%', data: {
+                head: { score: 5, nut: '징코빌로바, 오메가3', desc: '혈관 탄력도 관리가 필요한 시점입니다.' },
+                body: { score: 4, nut: '코엔자임Q10, 나토키나제', desc: '복부 비만 관리 및 정기적인 내시경 검사를 권고합니다.' },
+                arms: { score: 5, nut: '글루코사민, 비타민D', desc: '오십견 등 관절 질환 예방을 위한 영양 섭취가 필수입니다.' },
+                legs: { score: 4, nut: '칼슘, 보스웰리아', desc: '골밀도 감소 징후가 있어 고강도 하체 운동은 주의하십시오.' }
+            }}
         };
 
         let currentAge = '20s';
-        let model, mixer;
-        const clock = new THREE.Clock();
-
-        // --- 기본 셋업 ---
+        let model, marker;
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.2, 3.5);
+        camera.position.set(0, 1.2, 3.8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -117,109 +128,118 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0x00f2ff, 2);
-        pointLight.position.set(2, 3, 4);
-        scene.add(pointLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const pLight = new THREE.PointLight(0x00f2ff, 3);
+        pLight.position.set(2, 3, 4);
+        scene.add(pLight);
 
-        // --- GLTF 로드 ---
+        // --- 선택 효과용 마커 (빛나는 원구) ---
+        const markerGeo = new THREE.SphereGeometry(0.05, 16, 16);
+        const markerMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
+        marker = new THREE.Mesh(markerGeo, markerMat);
+        marker.visible = false;
+        scene.add(marker);
+
+        // --- 모델 로드 ---
         const loader = new GLTFLoader();
         loader.load('./scene.gltf', (gltf) => {
             model = gltf.scene;
-            
-            // 모델 색상 초기화 (반투명 사이버 블루)
             model.traverse(n => {
                 if (n.isMesh) {
                     n.material = new THREE.MeshStandardMaterial({
-                        color: 0x00aaff,
-                        transparent: true,
-                        opacity: 0.6,
-                        metalness: 0.8,
-                        roughness: 0.2
+                        color: 0x00aaff, transparent: true, opacity: 0.5, metalness: 0.9, roughness: 0.1
                     });
                 }
             });
-
             scene.add(model);
             document.getElementById('loader').style.display = 'none';
+            updateStats();
         });
 
-        // --- 부위 판별 알고리즘 (핵심) ---
+        // --- 인터랙션 로직 ---
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
         function handleInteract(e) {
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            pointer.x = (clientX / window.innerWidth) * 2 - 1;
-            pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            pointer.x = (x / window.innerWidth) * 2 - 1;
+            pointer.y = -(y / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObjects(scene.children, true);
+            const hits = raycaster.intersectObjects(scene.children, true);
 
-            if (intersects.length > 0) {
-                const point = intersects[0].point; // 클릭된 지점의 좌표
-                const y = point.y;
-                const x = Math.abs(point.x);
+            if (hits.length > 0 && hits[0].object !== marker) {
+                const p = hits[0].point;
+                // 1. 마커 표시 (선택 영역 효과)
+                marker.position.copy(p);
+                marker.visible = true;
+                marker.scale.set(1,1,1);
+                
+                // 2. 부위 판별
                 let partId = '';
-                let partName = '';
+                let name = '';
+                if (p.y > 1.45) { partId = 'head'; name = 'HEAD & BRAIN'; }
+                else if (p.y < 0.6) { partId = 'legs'; name = 'LOWER BODY'; }
+                else if (Math.abs(p.x) > 0.4) { partId = 'arms'; name = 'ARMS & JOINTS'; }
+                else { partId = 'body'; name = 'CORE & ORGANS'; }
 
-                // 좌표 기반 분류 (모델의 높이에 따라 논리적 분할)
-                if (y > 1.45) {
-                    partId = 'head'; partName = '두부 및 뇌신경';
-                } else if (y < 0.6) {
-                    partId = 'legs'; partName = '하체 및 골격계';
-                } else {
-                    if (x > 0.4) {
-                        partId = 'arms'; partName = '상체 및 관절';
-                    } else {
-                        partId = 'body'; partName = '흉부 및 내장기관';
-                    }
-                }
-
-                showUI(partId, partName);
+                showInfo(partId, name);
             }
         }
 
-        function showUI(id, name) {
-            const data = db[currentAge][id];
-            const panel = document.getElementById('info-panel');
-            
+        function showInfo(id, name) {
+            const data = db[currentAge].data[id];
             document.getElementById('part-name').innerText = name;
-            document.getElementById('part-score').innerText = data.score;
+            document.getElementById('part-desc').innerText = data.desc;
             document.getElementById('part-nutrient').innerText = data.nut;
-            
-            // 점수에 따른 색상 피드백
-            const scoreColor = data.score > 7 ? '#00ff88' : (data.score > 4 ? '#ffcc00' : '#ff3333');
-            document.getElementById('part-score').style.color = scoreColor;
-            
-            panel.style.display = 'block';
+            document.getElementById('info-panel').style.display = 'block';
+        }
+
+        window.closePanel = () => {
+            document.getElementById('info-panel').style.display = 'none';
+            marker.visible = false;
+        }
+
+        // --- 통계 업데이트 (그래프 및 상위%) ---
+        window.updateStats = () => {
+            const ageData = db[currentAge];
+            document.getElementById('top-rank').innerText = ageData.rank + " 예상";
+
+            Object.keys(ageData.data).forEach(key => {
+                const score = ageData.data[key].score;
+                const fill = document.querySelector(`#stat-${key} .bar-fill`);
+                const valTxt = document.querySelector(`#stat-${key} .v`);
+                
+                fill.style.width = (score * 10) + '%';
+                valTxt.innerText = score;
+                // 점수별 색상
+                fill.style.background = score > 7 ? '#00ff88' : (score > 4 ? '#ffcc00' : '#ff3333');
+            });
         }
 
         window.changeAge = (age, btn) => {
             currentAge = age;
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById('info-panel').style.display = 'none';
-        };
+            updateStats();
+            closePanel();
+        }
 
-        window.addEventListener('click', handleInteract);
+        window.addEventListener('mousedown', handleInteract);
         window.addEventListener('touchstart', handleInteract);
 
         function animate() {
             requestAnimationFrame(animate);
             if (model) model.rotation.y += 0.002;
+            if (marker.visible) {
+                const s = 1 + Math.sin(Date.now() * 0.01) * 0.2;
+                marker.scale.set(s, s, s); // 마커 깜빡임 효과
+            }
             controls.update();
             renderer.render(scene, camera);
         }
         animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
